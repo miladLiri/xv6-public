@@ -129,47 +129,154 @@ void fixup(struct node* root, struct node* pt)
     }
 }
 
-// Function to print inorder traversal of the fixated tree
-void inorder(struct node* trav)
+// Function to find the minimum node in a given tree
+struct node* minValueNode(struct node* node)
 {
-    if (trav == NULL)
-        return;
-    inorder(trav->l);
-    printf("%d ", trav->data->virtualtime);
-    inorder(trav->r);
+    struct node* current = node;
+
+    // Find the leftmost leaf node
+    while (current && current->l != NULL)
+        current = current->l;
+
+    return current;
 }
 
-// Driver code
-int main()
+// Function to replace a node with the child node
+void replaceNode(struct node* node, struct node* child)
 {
-    int n = 7;
-    int a[7] = { 7, 6, 5, 4, 3, 2, 1 };
+    if (node->p == NULL)
+        root = child;
+    else if (node == node->p->l)
+        node->p->l = child;
+    else
+        node->p->r = child;
 
-    // Define and initialize the processes
-    struct proc procs[7];
-    procs[0].virtualtime = 7;
-    procs[1].virtualtime = 6;
-    procs[2].virtualtime = 5;
-    procs[3].virtualtime = 4;
-    procs[4].virtualtime = 3;
-    procs[5].virtualtime = 2;
-    procs[6].virtualtime = 1;
+    if (child != NULL)
+        child->p = node->p;
+}
 
-    for (int i = 0; i < n; i++) {
-        struct node* temp = (struct node*)malloc(sizeof(struct node));
-        temp->r = NULL;
-        temp->l = NULL;
-        temp->p = NULL;
-        temp->data = &procs[i];
-        temp->c = 1;
+// Function to fix the violations caused by BST deletion
+void fixDelete(struct node* node)
+{
+    struct node* sibling;
+    while (node != root && node->c == 0) {
+        if (node == node->p->l) {
+            sibling = node->p->r;
 
-        root = bst(root, temp);
-        fixup(root, temp);
-        root->c = 0;
+            if (sibling->c == 1) {
+                sibling->c = 0;
+                node->p->c = 1;
+                leftrotate(node->p);
+                sibling = node->p->r;
+            }
+
+            if (sibling->l->c == 0 && sibling->r->c == 0) {
+                sibling->c = 1;
+                node = node->p;
+            }
+            else {
+                if (sibling->r->c == 0) {
+                    sibling->l->c = 0;
+                    sibling->c = 1;
+                    rightrotate(sibling);
+                    sibling = node->p->r;
+                }
+
+                sibling->c = node->p->c;
+                node->p->c = 0;
+                sibling->r->c = 0;
+                leftrotate(node->p);
+                node = root;
+            }
+        }
+        else {
+            sibling = node->p->l;
+
+            if (sibling->c == 1) {
+                sibling->c = 0;
+                node->p->c = 1;
+                rightrotate(node->p);
+                sibling = node->p->l;
+            }
+
+            if (sibling->r->c == 0 && sibling->l->c == 0) {
+                sibling->c = 1;
+                node = node->p;
+            }
+            else {
+                if (sibling->l->c == 0) {
+                    sibling->r->c = 0;
+                    sibling->c = 1;
+                    leftrotate(sibling);
+                    sibling = node->p->l;
+                }
+
+                sibling->c = node->p->c;
+                node->p->c = 0;
+                sibling->l->c = 0;
+                rightrotate(node->p);
+                node = root;
+            }
+        }
+    }
+    node->c = 0;
+}
+
+// Function to delete a node from the red-black tree
+struct node* deleteNode(struct node* root, int key)
+{
+    struct node* node = root;
+    struct node* parent = NULL;
+    struct node* toDelete = NULL;
+    int found = 0;
+
+    while (node != NULL && found == 0) {
+        if (node->data->pid == key) {
+            found = 1;
+            toDelete = node;
+        }
+
+        if (found == 0) {
+            if (node->data->pid < key)
+                node = node->r;
+            else
+                node = node->l;
+        }
     }
 
-    printf("Inorder Traversal of Created Tree:\n");
-    inorder(root);
+    if (found == 0) {        
+        return root;
+    }
 
-    return 0;
+    int color = toDelete->c;
+    struct node* child;
+    if (toDelete->l == NULL) {
+        child = toDelete->r;
+        replaceNode(toDelete, toDelete->r);
+    }
+    else if (toDelete->r == NULL) {
+        child = toDelete->l;
+        replaceNode(toDelete, toDelete->l);
+    }
+    else {
+        struct node* minNode = minValueNode(toDelete->r);
+        color = minNode->c;
+        child = minNode->r;
+        if (minNode->p == toDelete)
+            parent = minNode;
+        else {
+            replaceNode(minNode, minNode->r);
+            minNode->r = toDelete->r;
+            minNode->r->p = minNode;
+        }
+        replaceNode(toDelete, minNode);
+        minNode->l = toDelete->l;
+        minNode->l->p = minNode;
+        minNode->c = toDelete->c;
+    }
+
+    if (color == 0)
+        fixDelete(child);
+
+    return root;
 }
