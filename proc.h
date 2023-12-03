@@ -34,7 +34,7 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-typedef enum { RED, BLACK } Color;
+enum Color { RED, BLACK };
 
 // Per-process state
 struct proc {

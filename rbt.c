@@ -1,5 +1,6 @@
-#include "proc.h"
+#include "spinlock.h"
 #include "rbt.h"
+#include "proc.h"
 
 ////////Red Black Tree functions for operations of Insertion and retrieving, while maintaining Red Black Tree properties
 

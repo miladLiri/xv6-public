@@ -1,3 +1,4 @@
+
 #include "spinlock.h"
 
 struct RedBlackTree {
@@ -9,7 +10,7 @@ struct RedBlackTree {
   int period;
 }rbTree;
 
-void treeInit(struct redblackTree *tree, char *lockName, int latency);
+void treeInit(struct RedBlackTree *tree, char *lockName, int latency);
 
 void insertProcess(struct RedBlackTree* tree, struct proc* p);
 
