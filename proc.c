@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "rbt.h"
 
 struct {
   struct spinlock lock;
@@ -13,6 +14,11 @@ struct {
 } ptable;
 
 static struct proc *initproc;
+
+//cfs
+static struct RedBlackTree *runnableTasks = &rbTree;
+static int latency = NPROC / 2;
+static int min_granularity = 2;
 
 int nextpid = 1;
 extern void forkret(void);
@@ -24,6 +30,9 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+
+  //cfs
+  treeInit(runnableTasks, "runnableTasks", latency);
 }
 
 // Must be called with interrupts disabled
@@ -112,6 +121,16 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  //cfs
+  p->virtualRuntime = 0;
+  p->currentRuntime = 0;
+  p->maximumExecutiontime = 0;
+  p->niceValue = 0;
+
+  p->left = 0;
+  p->right = 0;
+  p->parentP = 0;
+
   return p;
 }
 
@@ -151,6 +170,9 @@ userinit(void)
   p->state = RUNNABLE;
 
   release(&ptable.lock);
+
+  //cfs
+  insertProcess(runnableTasks, p);
 }
 
 // Grow current process's memory by n bytes.
@@ -217,6 +239,9 @@ fork(void)
   np->state = RUNNABLE;
 
   release(&ptable.lock);
+
+  //cfs
+  insertProcess(runnableTasks, np);
 
   return pid;
 }
@@ -332,25 +357,56 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+    //cfs
+    p = retrieveProcess(runnableTasks, latency, min_granularity);
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+    while (p != 0)
+    {
+      if(p->state == RUNNABLE)
+      {
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+
+      }   
+
+      p = retrieveProcess(runnableTasks, latency, min_granularity);
     }
+    
     release(&ptable.lock);
+
+    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    //   if(p->state != RUNNABLE)
+    //     continue;
+
+    //   // Switch to chosen process.  It is the process's job
+    //   // to release ptable.lock and then reacquire it
+    //   // before jumping back to us.
+    //   c->proc = p;
+    //   switchuvm(p);
+    //   p->state = RUNNING;
+
+    //   swtch(&(c->scheduler), p->context);
+    //   switchkvm();
+
+    //   // Process is done running for now.
+    //   // It should have changed its p->state before coming back.
+    //   c->proc = 0;
+    // }
+
+    //release(&ptable.lock);
 
   }
 }
@@ -370,24 +426,70 @@ sched(void)
 
   if(!holding(&ptable.lock))
     panic("sched ptable.lock");
+
   if(mycpu()->ncli != 1)
     panic("sched locks");
+
   if(p->state == RUNNING)
     panic("sched running");
+
   if(readeflags()&FL_IF)
     panic("sched interruptible");
+
   intena = mycpu()->intena;
   swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
 }
 
-// Give up the CPU for one scheduling round.
+//cfs
+int
+checkPreemption(struct proc* current, struct proc* proc_with_min_vruntime){
+
+  int procRuntime = current->currentRuntime;
+  
+  //Determine if the currently running process has exceed its time slice.
+  if((procRuntime >= current->maximumExecutiontime) && (procRuntime >= min_granularity))
+  	return 1;
+  
+  //If the virtual runtime of the currently running process is greater than the smallest process, 
+  //then context switching should occur
+  if(proc_with_min_vruntime != 0 && 
+    proc_with_min_vruntime->state == RUNNABLE && 
+    current->virtualRuntime > proc_with_min_vruntime->virtualRuntime)
+  {
+	
+	//Allow preemption if the process has ran for at least the min_granularity.
+        //Due to the calls of checking for preemption, there needs to be made a distinction between when the preemption function
+	//is called after a process has just be selected by the cfs scheduler and when a process has been currently running.
+	if((procRuntime != 0) && (procRuntime >= min_granularity)){
+		return 1;
+  	} else if(procRuntime == 0){
+		return 1;
+        }
+  }
+
+  //No preemption should occur
+  return 0;
+}
+
+//cfs
+//Determine if the currently running process should be preempted or allowed to continue running
 void
 yield(void)
 {
+  struct proc* currproc = myproc();
+
   acquire(&ptable.lock);  //DOC: yieldlock
-  myproc()->state = RUNNABLE;
-  sched();
+
+  if(checkPreemption(currproc, runnableTasks->min_vRuntime) == 1)
+  {
+    currproc->state = RUNNABLE;
+	  currproc->virtualRuntime = currproc->virtualRuntime + currproc->currentRuntime;
+    currproc->currentRuntime = 0;
+    insertProcess(runnableTasks, currproc);
+    sched();
+  }
+
   release(&ptable.lock);
 }
 
@@ -461,7 +563,17 @@ wakeup1(void *chan)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
+    {
+      //cfs
       p->state = RUNNABLE;
+
+      p->virtualRuntime = p->virtualRuntime + p->currentRuntime;
+      p->currentRuntime = 0;
+
+      insertProcess(runnableTasks, p);
+
+    }
+      
 }
 
 // Wake up all processes sleeping on chan.
@@ -487,7 +599,14 @@ kill(int pid)
       p->killed = 1;
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
+      {
         p->state = RUNNABLE;
+
+        p->virtualRuntime = p->virtualRuntime + p->currentRuntime;
+        p->currentRuntime = 0;
+        
+        insertProcess(runnableTasks, p);
+      }
       release(&ptable.lock);
       return 0;
     }
