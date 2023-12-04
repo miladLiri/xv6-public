@@ -1,5 +1,6 @@
-![intro](badges/Screenshot%20from%202023-12-04%2019-22-59.png)
-
+<p align="center">
+  ![intro](badges/Screenshot%20from%202023-12-04%2019-22-59.png)
+</p>
 
 <p align="center">  
   <a href="#getting-started">Getting Started</a> • 
