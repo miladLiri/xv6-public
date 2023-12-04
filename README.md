@@ -1,5 +1,5 @@
-<p align="center">
-  ![intro](badges/Screenshot%20from%202023-12-04%2019-22-59.png)
+<p align="center">  
+  <img src="badges/Screenshot%20from%202023-12-04%2019-22-59.png" alt="image">
 </p>
 
 <p align="center">  
