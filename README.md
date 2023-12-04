@@ -26,7 +26,7 @@ Effective process scheduling and optimized data structures are fundamental compo
 4. Testing and Evaluation: We will thoroughly test the modified xv6 kernel with the integrated CFS scheduler and Red-Black Tree data structure.
 
 <p align="right">
-    <a href="#image">(back up)</a>
+    <a href="#introduction">(back up)</a>
 </p>
 
 ## Getting Started
