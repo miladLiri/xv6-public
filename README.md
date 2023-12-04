@@ -1,5 +1,5 @@
 <p align="center">  
-  <img src="badges/Screenshot%20from%202023-12-04%2019-22-59.png" alt="image" width="400" height="200">
+  <img src="badges/Screenshot%20from%202023-12-04%2019-22-59.png" alt="image" width="800" height="450">
 </p>
 
 <p align="center">  
