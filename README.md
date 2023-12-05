@@ -52,20 +52,57 @@ The process of getting started with this project is just like the steps involved
 
 ## Code Explanation
 This section aims to outline the important modifications made to the codebase.
+### Red Black Tree
+We have made some changes to the Red-Black Tree implementation.
+We have add insertion and deletion methods. Actually the deletion method was not useful.
 
-<p align="right">
-    <a href="#introduction">(back up)</a>
-</p>
+We have also added some fields on proc struct to enhance the functionality:
 
-## Contact
+        //CFS fields
+        int virtualRuntime;    	
+        int currentRuntime;				
+        int maximumExecutiontime;	
+        int niceValue;		
+        int weightValue;
 
-**Milad liri**
+        //rbt fields
+        enum Color color;
+        struct proc *left;
+        struct proc *right;
+        struct proc *parentP;
 
-[![LinkedIn](https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/milad-liri/)
+### proc.c
 
-**Aidin Asl Zaeim**
+in this section the changes made on **proc.c** are listed:
 
-[![LinkedIn](https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/aidinzaeim/)
++ We have incorporated the Red-Black Tree initialization into the "pinit" function. This function takes on the responsibility of initializing processes. 
++ We have modified the "allocproc" function to incorporate the addition of new processes. Furthermore, we have implemented process initialization for the newly added processes, ensuring they start with default values.
+    
+        //cfs
+        p->virtualRuntime = 0;
+        p->currentRuntime = 0;
+        p->maximumExecutiontime = 0;
+        p->niceValue = 0;
+
+        p->left = 0;
+        p->right = 0;
+        p->parentP = 0;
+
+#### userinit
+we have made some modifications on this block of code to gain some functionalities:
+
+  1. The generation of the first process is the responsibility of this block
+  2. The other processes will be forked from this process 
+  3. After process generation, runnable processes will be inserted into the tree in this block of code
+
+#### scheduler
+
+Previously, when an interrupt occurred, the scheduler would simply preempt the current process. However, in the recent modification, the scheduler now employs a smarter strategy. It checks if there is a process with a shorter virtual time available. If a process with a shorter virtual time is found, it preempts the current process and replaces it. On the other hand, if no such process is found, it seamlessly continues the execution of the current process.
+
+### trap.c
+ After modification of this block of code, the runtime will be extended by one unit before calling the yield function
+
+
 
 <p align="right">
     <a href="#introduction">(back up)</a>
@@ -80,6 +117,20 @@ If you have a suggestion that would make this better, please fork the repo and c
 3. Commit your changes (git commit -am 'Add some fooBar')
 4. Push to the branch (git push origin feature/fooBar)
 5. Create a new Pull Request
+
+<p align="right">
+    <a href="#introduction">(back up)</a>
+</p>
+
+## Contact
+
+**Milad liri**
+
+[![LinkedIn](https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/milad-liri/)
+
+**Aidin Asl Zaeim**
+
+[![LinkedIn](https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/aidinzaeim/)
 
 <p align="right">
     <a href="#introduction">(back up)</a>
