@@ -1,5 +1,6 @@
-![intro](badges/Screenshot%20from%202023-12-04%2019-22-59.png)
-
+<p align="center">  
+  <img src="badges/Screenshot%20from%202023-12-04%2019-22-59.png" alt="image" width="700" height="300">
+</p>
 
 <p align="center">  
   <a href="#getting-started">Getting Started</a> • 
@@ -14,8 +15,8 @@ Effective process scheduling and optimized data structures are fundamental compo
 
 ### Goals
 
-1. Implementing Completely Fair Scheduler (CFS) on xv6: The project aims to integrate the Completely Fair Scheduler algorithm into the xv6 operating system. This involves designing and implementing the necessary data structures and scheduling policies to ensure fair resource allocation among processes.
-2. Enhancing scheduler functionality with Red-Black Tree data structure: The project aims to utilize the Red-Black Tree data structure to enhance the functionality of the scheduler. By employing this balanced binary search tree, the scheduler can efficiently manage and prioritize processes based on specified criteria such as priority levels or other relevant metrics.
++ Implementing Completely Fair Scheduler (CFS) on xv6: The project aims to integrate the Completely Fair Scheduler algorithm into the xv6 operating system. This involves designing and implementing the necessary data structures and scheduling policies to ensure fair resource allocation among processes.
++ Enhancing scheduler functionality with Red-Black Tree data structure: The project aims to utilize the Red-Black Tree data structure to enhance the functionality of the scheduler. By employing this balanced binary search tree, the scheduler can efficiently manage and prioritize processes based on specified criteria such as priority levels or other relevant metrics.
 
 ### Methodology
 
