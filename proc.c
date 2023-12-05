@@ -16,7 +16,7 @@ struct {
 static struct proc *initproc;
 
 
-/////
+//cfs
 struct RedBlackTree {
   int count;
   int rbTreeWeight;
@@ -30,16 +30,12 @@ struct RedBlackTree {
 
 
 
-////////Red Black Tree functions for operations of Insertion and retrieving, while maintaining Red Black Tree properties
+////////Red Black Tree functions for operations of Insertion and retrieving
 
 /*
-  rbinit(struct RedBlackTree*, char)
-  parameters: pointer that contains the address of the red-black tree and a string containing the name of the lock
-  returns: none
-  This function will initialize the red black tree data structure.
+  initialize the red black tree data structure.
 */
-void
-treeInit(struct RedBlackTree *tree, char *lockName, int latency)
+void treeInit(struct RedBlackTree *tree, char *lockName, int latency)
 {
   initlock(&tree->lock, lockName);
   tree->count = 0;
@@ -53,29 +49,19 @@ treeInit(struct RedBlackTree *tree, char *lockName, int latency)
 
 /*
   calculateWeight(int)
-  parameters: the process's niceValue
-  returns: an integer that signifies the weight of the process the address points to.
-  This function will calculate each individual process's weight in respect to it's nice value.
-
-  //-Nice value can be in between -20 to 19 in the linux kernel, but for our xv6 implementation we will use the range 0 to 30
-  The default nice value for a process is set to 0
+  calculate each individual process's weight in respect to it's nice value.
 
   The formula to determine weight of process is:
-  1024/(1.25 ^ nice value of process)
+  weight = 1024/(1.25 ^ nice value of process)
 */
-int
-calculateWeight(int nice){
+int calculateWeight(int nice){
 
   double denominator = 1.25;
 
-  //In order to ensure correct utilization of process priority during the time slice calculation
-  //If a process has a higher nice value given, then for the formula to accurately utlize the priority level without losing precision
-  //due to fraction casted to an int, it will give it a default value that will represent the same priority level in the system.
-  if(nice > 30){
-	nice = 30;
+  if(nice > 20){
+	nice = 20;
   }
-  
-  //While loop to calculate (1.25 ^ nice value) for denominator of formula to find weight. 
+   
   int iterator = 0;
   while (iterator < nice && nice > 0){
   	denominator = denominator * 1.25;
@@ -85,48 +71,41 @@ calculateWeight(int nice){
 }
 
 /*
-  emptyTree(struct RedBlackTree*)
-  parameters: pointer that contains the address of the red-black tree structure
-  returns: none
-  This function will determine if the tree is empty or not, i.e the tree has no processes in it.
+  determine if the tree is empty or not
 */
-int
-emptyTree(struct RedBlackTree *tree)
+int emptyTree(struct RedBlackTree *tree)
 {
   return tree->count == 0;
 }
 
 /*
-  fullTree(struct RedBlackTree*)
-  parameters: pointer that contains the address of the red-black tree structure
-  returns: none
-  This function will determine if the tree is full, i.e the maximum alloted number of processes in the system
+  determine if the tree is full
 */
-int
-fullTree(struct RedBlackTree *tree)
+int fullTree(struct RedBlackTree *tree)
 {
   return tree->count == NPROC;
 }
 
-//This two process retrieval functions will retrive the grandparent or uncle process of the process passed into the functions. This is done to preserve red black tree properties by altering states and positions of the tree.
-struct proc*
-retrieveGrandparentproc(struct proc* process){
-  if(process != 0 && process->parentP != 0){
-	return process->parentP->parentP;
-  } 
-	
+//This two process retrieval functions will retrive the grandparent or uncle process of the process 
+struct proc* retrieveGrandparentproc(struct proc* process){
+  if(process != 0 && process->parentP != 0)
+	  return process->parentP->parentP;
+  
   return 0;
 }
 
-struct proc*
-retrieveUncleproc(struct proc* process){
+struct proc* retrieveUncleproc(struct proc* process){
   struct proc* grandParent = retrieveGrandparentproc(process);
-  if(grandParent != 0){
-	if(process->parentP == grandParent->left){
-		return grandParent->right;
-	} else {
-		return grandParent->left;
-	}
+  if(grandParent != 0)
+  {
+    if(process->parentP == grandParent->left)
+    {
+      return grandParent->right;
+    } 
+    else 
+    {
+      return grandParent->left;
+    }
   }
 	
   return 0;
@@ -134,10 +113,6 @@ retrieveUncleproc(struct proc* process){
 
 
 /*
-  rotateLeft(struct RedBlackTree*, struct proc*)
-  parameters:The red black tree pointer to access and modify the root, and the current process in the tree that will be rotated to the left
-  returns:none
-  This function will perform a rotation on the process structure in the tree that is passed into the function. 
   It will perform a left rotation, where it will move down leftward in the tree and its right process will be moved up to its place.
 */
 void 
@@ -161,10 +136,6 @@ rotateLeft(struct RedBlackTree* tree, struct proc* positionProc){
 }
 
 /*
-  rotateRight(struct RedBlackTree*, struct proc*)
-  parameters:The red black tree pointer to access and modify the root, and the current process in the tree that will be rotated to the right
-  returns:none
-  This function will perform a rotation on the process structure in the tree that is passed into the function. 
   It will perform a right rotation, where it will move down rightward in the tree and its left process will be moved up to its place.
 */
 void 
@@ -191,35 +162,30 @@ rotateRight(struct RedBlackTree* tree, struct proc* positionProc){
 }
 
 /*
-  setMinimumVRuntimeproc(struct proc*)
-  parameters: the address of a process in the tree to be utilized to traverse the tree
-  returns:A pointer that contains the address to the process with the smallest Virtual Runtime
   This function will return a pointer to the address of the process with the smallest Virtual Runtime. 
-  It will do this by traversing through the left branch of the tree until it reaches the process.
 */
-struct proc*
-setMinimumVRuntimeproc(struct proc* traversingProcess){
+struct proc* setMinimumVRuntimeproc(struct proc* traversingProcess){
 	
-  if(traversingProcess != 0){
-	if(traversingProcess->left != 0){
-	    return setMinimumVRuntimeproc(traversingProcess->left);
-	} else {
-	    return traversingProcess;
-	}
+  if(traversingProcess != 0)
+  {
+    if(traversingProcess->left != 0){
+        return setMinimumVRuntimeproc(traversingProcess->left);
+    } else {
+        return traversingProcess;
+    }
   }
 	return 0;
 }
 
-struct proc*
-insertproc(struct proc* traversingProcess, struct proc* insertingProcess){
+struct proc* insertproc(struct proc* traversingProcess, struct proc* insertingProcess){
 	
   insertingProcess->color = RED;
 	
-  //i.e it is root or at leaf of tree
+  // it is root or at leaf of tree
   if(traversingProcess == 0){
-	return insertingProcess;
+	  return insertingProcess;
   }		
-  //i.e everything after root
+  //everything after root
   //move process to the right of the current subtree
   if(traversingProcess->virtualRuntime <= insertingProcess->virtualRuntime){
 	insertingProcess->parentP = traversingProcess;
@@ -233,9 +199,6 @@ insertproc(struct proc* traversingProcess, struct proc* insertingProcess){
 }
 
 /*
-  insertionCases(struct RedBlackTree*, struct proc*, int)
-  parameters: the pointer of the tree, process in the red black tree and an integer value
-  returns: none
   This function will contain different cases that will incorporate the properties for a red black tree. It will utilize the integer value to determine which case need to be handled.
   cases:
   -1: if the current inserted process is the root
@@ -321,7 +284,7 @@ insertProcess(struct RedBlackTree* tree, struct proc* p){
 
   acquire(&tree->lock);
   if(!fullTree(tree)){	
-	//actually insert process into tree
+	
 	tree->root = insertproc(tree->root, p);
 	if(tree->count == 0)
 		tree->root->parentP = 0;
@@ -333,11 +296,10 @@ insertProcess(struct RedBlackTree* tree, struct proc* p){
 	//perform total weight calculation 
 	tree->rbTreeWeight += p->weightValue;
 	
-    	//Check for possible cases for Red Black tree property violations
+  //Check for possible cases for Red Black tree property violations
 	insertionCases(tree, p, 1);
 		
-	//This function call will find the process with the smallest vRuntime, unless 
-	//there was no insertion of a process that has a smaller minimum virtual runtime then the process that is being pointed by min_vRuntime
+	//set minv runtime process
 	if(tree->min_vRuntime == 0 || tree->min_vRuntime->left != 0)
 		tree->min_vRuntime = setMinimumVRuntimeproc(tree->root);
 	 
@@ -346,9 +308,6 @@ insertProcess(struct RedBlackTree* tree, struct proc* p){
 }
 
 /*
-  retrievingCases(struct RedBlackTree*, struct proc*, struct proc*, int)
-  paramters: The red black tree pointer to access and modify the root, the parent of the process, the pointer to the process with the smallest virtual Runtime and the case number
-  returns: none
   This function will check for violations of the red black tree to ensure the trees properties are not broken when we remove the process out of the tree. 
   cases:
   -1:We remove the process that needs to be retrieved and ensure that either the process or the process's child is red, but not both of them.
@@ -450,26 +409,19 @@ retrievingCases(struct RedBlackTree* tree, struct proc* parentProc, struct proc*
 	
 }
 
-struct proc*
-retrieveProcess(struct RedBlackTree* tree, int latency, int min_granularity){
-  struct proc* foundProcess;	//Process pointer utilized to hold the address of the process with smallest VRuntime 
+struct proc* retrieveProcess(struct RedBlackTree* tree, int latency, int min_granularity){
+  struct proc* foundProcess;	
 
   acquire(&tree->lock);
   if(!emptyTree(tree)){
 
-	//If the number of processes are greater than the division between latency and minimum granularity
-	//then recalculate the period for the processes
-	//This condition is performed when the scheduler selects the next process to run
-        //The formula can be found in CFS tuning article by Jacek Kobus and Refal Szklarski
-	//In the CFS schduler tuning section:
+  // set tree period
 	if(tree->count > (latency / min_granularity)){
 		tree->period = tree->count * min_granularity;
 	} 
 
-	//retrive the process with the smallest virtual runtime by removing it from the red black tree and returning it
 	foundProcess = tree->min_vRuntime;	
 
-	//Determine if the process that is being chosen is runnable at the time of the selection, if it is not, then don't return it.
 	if(foundProcess->state != RUNNABLE){
   		release(&tree->lock);
 		return 0;
@@ -944,9 +896,6 @@ checkPreemption(struct proc* current, struct proc* proc_with_min_vruntime){
     current->virtualRuntime > proc_with_min_vruntime->virtualRuntime)
   {
 	
-	//Allow preemption if the process has ran for at least the min_granularity.
-        //Due to the calls of checking for preemption, there needs to be made a distinction between when the preemption function
-	//is called after a process has just be selected by the cfs scheduler and when a process has been currently running.
 	if((procRuntime != 0) && (procRuntime >= min_granularity)){
 		return 1;
   	} else if(procRuntime == 0){
